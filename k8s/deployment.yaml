@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: easyshop-frontend
+  labels:
+    app: easyshop
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: easyshop
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: easyshop
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: easyshop-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: easyshop-config
+        - secretRef:
+            name: easyshop-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20 

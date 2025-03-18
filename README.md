@@ -110,7 +110,9 @@ flowchart TD
 > Make sure you have the following installed:
 > - Node.js (v18 or higher)
 > - npm (v9 or higher)
-> - MongoDB (v7 or higher)
+> - Docker and Docker Compose (for local development)
+> - Kubernetes cluster (for production deployment)
+> - MongoDB (v7 or higher, provided by Docker/Kubernetes)
 
 ### Installation Steps
 
@@ -264,3 +266,153 @@ For questions or feedback, please open an issue or contact the maintainers:
     Made with ❤️ by <a href="https://iemafzalhassan.tech" target="_blank"><b>Md. Afzal Hassan Ehsani</b></a>
   </p>
 </div>
+
+## Local Development
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/easyshop.git
+cd easyshop
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Run the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Docker Development
+
+1. Build and run with Docker Compose:
+```bash
+docker-compose up --build
+```
+
+2. Access the application:
+- Frontend: http://localhost:3000
+- MongoDB Express: http://localhost:8081
+- MongoDB: mongodb://localhost:27017
+
+## Kubernetes Deployment
+
+### Prerequisites
+
+- Kubernetes cluster
+- kubectl configured
+- Container registry access
+- Base64 encoder for secrets
+
+### Deployment Steps
+
+1. Build and push the Docker image:
+```bash
+# Build the image
+docker build -t your-registry/easyshop-frontend:latest .
+
+# Push to your container registry
+docker push your-registry/easyshop-frontend:latest
+```
+
+2. Generate base64-encoded secrets:
+```bash
+# For NextAuth secret
+echo -n "your-nextauth-secret" | base64
+
+# For JWT secret
+echo -n "your-jwt-secret" | base64
+
+# For MongoDB credentials
+echo -n "admin" | base64
+echo -n "your-secure-password" | base64
+```
+
+3. Update `k8s/secrets.yaml` with the base64-encoded values.
+
+4. Deploy to Kubernetes:
+```bash
+# Create namespace (optional)
+kubectl create namespace easyshop
+
+# Apply all manifests
+kubectl apply -f k8s/storage.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/mongodb-deployment.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/services.yaml
+```
+
+5. Verify deployment:
+```bash
+# Check pods
+kubectl get pods
+
+# Check services
+kubectl get services
+
+# Check deployments
+kubectl get deployments
+```
+
+### Kubernetes Architecture
+
+The application is deployed with the following components:
+
+- **Frontend Deployment**: 2 replicas of the Next.js application
+- **MongoDB Deployment**: Single replica with persistent storage
+- **Services**: 
+  - Frontend: LoadBalancer service exposing port 80
+  - MongoDB: Internal service on port 27017
+- **Storage**: Persistent volume for MongoDB data
+- **ConfigMap**: Non-sensitive environment variables
+- **Secrets**: Sensitive environment variables and credentials
+
+### Resource Requirements
+
+- Frontend:
+  - CPU: 200m-500m
+  - Memory: 256Mi-512Mi
+- MongoDB:
+  - CPU: 250m-500m
+  - Memory: 512Mi-1Gi
+  - Storage: 10Gi
+
+### Health Checks
+
+- Frontend: HTTP GET /api/health
+- MongoDB: TCP socket check on port 27017
+
+## Environment Variables
+
+Required environment variables:
+
+```env
+# MongoDB Configuration
+MONGODB_URI=mongodb://mongodb:27017/easyshop
+
+# NextAuth Configuration
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret-key
+
+# JWT Configuration
+JWT_SECRET=your-jwt-secret-key
+
+# API Configuration
+API_URL=http://localhost:3000/api
+```
